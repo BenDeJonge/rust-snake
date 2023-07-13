@@ -3,7 +3,9 @@ use piston_window::{Key, Context, G2d};
 use piston_window::types::Color;
 use rand::{thread_rng, Rng};
 // Local imports.
-use crate::snake::{Direction, Snake, Block};
+use crate::block::Block;
+use crate::direction::Direction;
+use crate::snake::Snake;
 use crate::draw::{draw_block, draw_rectangle};
 
 // Constants.
@@ -19,8 +21,9 @@ const RESTART_TIME: f64 = 1.0;
 pub struct Game {
     snake: Snake,
     food: Option<Block>,
+    direction_queue: Vec<Option<Direction>>,
 
-    width: i32, 
+    width: i32,
     height: i32,
 
     game_over: bool,
@@ -42,8 +45,10 @@ impl Game {
             width,
             height,
             game_over: false,
+            direction_queue: Vec::new(),
         }
     }
+
 
     /// React to a keypress.
     /// # Arguments
@@ -66,23 +71,32 @@ impl Game {
         if direction.unwrap() == self.snake.head_direction().opposite() {
             return
         }
-        self.update_snake(direction);
+        self.direction_queue.push(direction);
     }
 
+
     /// Move to the next position and ead food, stopping the game in case of a death.
-    /// # Arguments
-    /// * `direction: Option<Direction>` - The direction input.
-    pub fn update_snake(&mut self, direction: Option<Direction>) {
+    pub fn update_snake(&mut self) {
+        let direction = match self.direction_queue.last() {
+            Some(dir) => *dir,
+            None => Some(self.snake.head_direction()),
+        };
         if self.check_snake_alive(direction) {
             self.snake.move_forward(direction);
             self.check_eaten();
         } else {
             self.game_over = true;
         }
+        // Resetting.
         self.waiting_time = 0.0;
+        self.direction_queue.clear();
     }
 
+
     /// Draw all game elements: the snake, the borders and optional food and game over symbols.
+    /// # Arguments
+    /// * `con: &piston_window::Context` - The context in which to draw.
+    /// * `g: &mut G2d` - The 2d graphics driver to use.
     pub fn draw(&self, con: &Context, g: &mut G2d) {
         // Drawing the snake and food.
         self.snake.draw(con, g);
@@ -103,7 +117,10 @@ impl Game {
         }
     }
 
-    /// Move the game one tick.
+
+    /// Move the game one tick, checking for game over, food presence and drawing the snake.
+    /// # Arguments
+    /// * `delta_time: f64` - The timestep of the tick in seconds.
     pub fn update(&mut self, delta_time: f64) {
         self.waiting_time += delta_time;
         
@@ -119,19 +136,22 @@ impl Game {
             Some(_) => (),
             None => self.add_food(),
         }
-        // Moving if no input received.
+        // Moving after the moving period has passed.
         if self.waiting_time > MOVING_PERIOD {
-            self.update_snake(None);
+            self.update_snake();
         }
     }
+
 
     /// Reset all the games attributes.
     pub fn restart(&mut self) {
         self.snake = Snake::new(2, 2, None, None);
+        self.direction_queue = Vec::new();
         self.waiting_time = 0.0;
         self.food = Some(Block::new(6, 4));
         self.game_over = false;
     }
+
 
     /// Respawn food at a random location after a previous one has been eaten.
     pub fn add_food(&mut self) {
@@ -160,6 +180,7 @@ impl Game {
         }
     }
 
+
     /// Check if the movement direction does not kill the snake.
     /// # Arguments
     /// * `direction: Option<Direction>` - The selected movement direction.
@@ -167,14 +188,7 @@ impl Game {
     /// * `bool` - Whether (true) or not (false) the snake survives the selected move.
     pub fn check_snake_alive(&self, direction: Option<Direction>) -> bool {
         let destination = self.snake.next_head(direction);
-        !self.snake.overlap_tail(destination) && !destination.out_of_bounds([0, self.width - 1], [0, self.height - 1])
+        !self.snake.overlap_tail(destination) && 
+        !destination.out_of_bounds([0, self.width - 1], [0, self.height - 1])
     }
 }
-
-// TODO:
-// - Keypresses
-// - Update Snake
-// - Add food
-// - Restart
-// - Window
-// - Clean Window

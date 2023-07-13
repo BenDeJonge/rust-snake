@@ -2,6 +2,9 @@
 mod draw;
 mod snake;
 mod game;
+mod block;
+mod direction;
+
 
 use piston_window::{WindowSettings, PistonWindow, Button, PressEvent, clear, UpdateEvent};
 use piston_window::types::Color;
