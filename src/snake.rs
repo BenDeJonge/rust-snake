@@ -35,7 +35,7 @@ impl Block {
     /// # Returns
     /// * `bool` - Whether (true) or not (false) the Block falls within the bounds.
     pub fn out_of_bounds(&self, x: [i32; 2], y: [i32; 2]) -> bool {
-        self.x < x[0] || self.x > x[1] || self.y < y[0] || self.y > y[1]
+        self.x <= x[0] || self.x >= x[1] || self.y <= y[0] || self.y >= y[1]
     }
 }
 
