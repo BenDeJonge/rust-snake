@@ -4,61 +4,12 @@ use piston_window::{Context, G2d};
 use piston_window::types::Color;
 // Importing local modules from the crate root.
 use crate::draw::draw_block;
+use crate::block::Block;
+use crate::direction::Direction;
 
 const SNAKE_HEAD_COLOR: Color = [0.00, 0.60, 0.00, 1.00];
 const SNAKE_BODY_COLOR: Color = [0.00, 0.80, 0.00, 1.00];
 
-
-// A simple Block struct, combining an x- and y-coordinate. Will not be exported so not pub.
-// It is required to derive copy and clone allow movement of this type.
-#[derive(Copy, Clone, PartialEq)]
-pub struct Block {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl Block {
-    /// Instantiates a new Block.
-    /// # Arguments
-    /// * `x: i32` - The Blocks x-coordinate.
-    /// * `y: i32` - The Blocks y-coordinate.
-    /// # Returns
-    /// * `Block` - The new Block instance.
-    pub fn new(x: i32, y: i32) -> Block {
-        Block { x, y, }
-    }
-
-    /// Check whether this block falls within given bounds.
-    /// # Arguments
-    /// * `x: [i32; 2]` - The x-bounds as [lower, higher].
-    /// * `y: [i32; 2]` - The y-bounds as [lower, higher].
-    /// # Returns
-    /// * `bool` - Whether (true) or not (false) the Block falls within the bounds.
-    pub fn out_of_bounds(&self, x: [i32; 2], y: [i32; 2]) -> bool {
-        self.x <= x[0] || self.x >= x[1] || self.y <= y[0] || self.y >= y[1]
-    }
-}
-
-// Create a Direction enum, acting as a generic type holding all 4 possible directions.
-#[derive(Copy, Clone, PartialEq)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right    
-}
-
-impl Direction {
-    /// Returns the opposite direction from the current.
-    pub fn opposite(&self) -> Direction {
-        match *self {
-            Direction::Up    => Direction::Down,
-            Direction::Down  => Direction::Up,
-            Direction::Left  => Direction::Right,
-            Direction::Right => Direction::Left,
-        }
-    }
-}
 
 pub struct Snake {
     /// The current and next direction in which the snake is travelling.

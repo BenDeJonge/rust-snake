@@ -2,7 +2,7 @@
 use piston_window::{rectangle, Context, G2d};
 use piston_window::types::Color;
 
-use crate::snake::Block;
+use crate::block::Block;
 
 // Setting up a constant for the block size in pixels.
 const BLOCK_SIZE: f64 = 25.0;
