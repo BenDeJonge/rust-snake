@@ -6,6 +6,7 @@ use rand::{thread_rng, Rng};
 use crate::block::Block;
 use crate::direction::Direction;
 use crate::snake::Snake;
+use crate::food;
 use crate::draw::{draw_block, draw_rectangle};
 
 // Constants.
@@ -92,6 +93,15 @@ impl Game {
         self.direction_queue.clear();
     }
 
+    pub fn update_food(&mut self) {
+        match self.food {
+            Some(b) => {
+                let offset = food::escape(b, &self.snake, [0, self.width], [0, self.height]);
+                self.food = Some(Block::new(b.x + offset[0], b.y + offset[1]))
+            },
+            None => return,
+        };
+    }
 
     /// Draw all game elements: the snake, the borders and optional food and game over symbols.
     /// # Arguments
@@ -138,6 +148,7 @@ impl Game {
         }
         // Moving after the moving period has passed.
         if self.waiting_time > MOVING_PERIOD {
+            self.update_food();
             self.update_snake();
         }
     }
@@ -170,7 +181,7 @@ impl Game {
         self.food = Some(food);
     }
 
-
+    
     /// Check if the snake has eaten food.
     pub fn check_eaten(&mut self) {
         // The head position coincides with the food.
@@ -189,6 +200,6 @@ impl Game {
     pub fn check_snake_alive(&self, direction: Option<Direction>) -> bool {
         let destination = self.snake.next_head(direction);
         !self.snake.overlap_tail(destination) && 
-        !destination.out_of_bounds([0, self.width - 1], [0, self.height - 1])
+        !destination.out_of_bounds([0, self.width], [0, self.height])
     }
 }
