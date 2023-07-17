@@ -4,6 +4,7 @@ mod snake;
 mod game;
 mod block;
 mod direction;
+mod food;
 
 
 use piston_window::{WindowSettings, PistonWindow, Button, PressEvent, clear, UpdateEvent};
