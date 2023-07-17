@@ -23,7 +23,7 @@ impl Block {
     /// * `y: [i32; 2]` - The y-bounds as [lower, higher].
     /// # Returns
     /// * `bool` - Whether (true) or not (false) the Block falls within the bounds.
-    pub fn out_of_bounds(&self, x: [i32; 2], y: [i32; 2]) -> bool {
-        self.x <= x[0] || self.x >= x[1] || self.y <= y[0] || self.y >= y[1]
+    pub fn out_of_bounds(&self, x_bounds: [i32; 2], y_bounds: [i32; 2]) -> bool {
+        self.x <= x_bounds[0] || self.x >= x_bounds[1] - 1 || self.y <= y_bounds[0] || self.y >= y_bounds[1] - 1
     }
 }

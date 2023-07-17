@@ -20,8 +20,8 @@ pub struct Snake {
     tail: Option<Block>,
     /// The (x,y) coordinates of all body Blocks.
     body: VecDeque<Block>,
-
 }
+
 
 impl Snake {
     /// Instantiate a new Snake.
@@ -59,6 +59,13 @@ impl Snake {
 
     }
 
+
+    /// Get the length of the Snake body VecDeque.
+    pub fn len(&self) -> i32 {
+        self.body.len() as i32
+    }
+
+
     /// Draw all blocks in the Snakes body inside the context using the graphics engine.
     pub fn draw(&self, con: &Context, g: &mut G2d) {
         let mut counter = 0;
@@ -72,15 +79,18 @@ impl Snake {
         }
     }
 
+
     /// Find the head position of the snake.
     pub fn head_position(&self) -> Block {
         *self.body.front().unwrap()
     }
 
+
     /// Get the direction the head is moving in.
     pub fn head_direction(&self) -> Direction {
         self.current_direction
     }
+
 
     /// Move the Snake forward in the current direction.
     /// This method modifies the Snakes body, so requires a mutable reference to self.
@@ -118,6 +128,7 @@ impl Snake {
         self.tail = Some(self.body.pop_back().unwrap());
     }
 
+
     /// Get the next head position based on the movement direction.
     /// # Arguments
     /// * `direction: Option<Direction>` - The movement direction, is None when no input is given.
@@ -139,10 +150,12 @@ impl Snake {
         }
     }
 
+
     /// Add the tail block when the snake has eaten food.
     pub fn restore_tail(&mut self) {
         self.body.push_back(self.tail.clone().unwrap())
     }
+
 
     /// Check if a block overlaps with the Snake body.
     /// # Arguments
