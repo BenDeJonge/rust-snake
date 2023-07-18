@@ -10,6 +10,7 @@ use crate::direction::Direction;
 const SNAKE_HEAD_COLOR: Color = [0.00, 0.60, 0.00, 1.00];
 const SNAKE_BODY_COLOR: Color = [0.00, 0.80, 0.00, 1.00];
 
+const SNAKE_STARTING_LENGTH: i32 = 3;
 
 pub struct Snake {
     /// The current and next direction in which the snake is travelling.
@@ -43,7 +44,7 @@ impl Snake {
         
         // Creating a body.
         let mut body = VecDeque::new();
-        let length = length.unwrap_or(3);
+        let length = length.unwrap_or(SNAKE_STARTING_LENGTH);
         for _ in (0..length).rev() {
             body.push_back(Block {
                 x: x + dx,

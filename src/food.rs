@@ -27,7 +27,7 @@ pub fn get_distance(block1: Block, block2: Block) -> f64 {
 /// * `x_bounds: [i32;2]` - The x-bounds of the level, in game coordinates.
 /// * `y_bounds: [i32;2]` - The y-bounds of the level, in game coordinates.
 /// # Returns
-/// * [i32;2]` - A random sample from the optimal escape offsets.
+/// * `[i32;2]` - A random sample from the optimal escape offsets.
 pub fn get_escape_offset(block: Block, snake: &Snake, x_bounds: [i32; 2], y_bounds: [i32; 2]) -> [i32;2] {
     let mut best_dist = get_distance(block, snake.head_position());
     let mut best_offsets: Vec<[i32;2]> = vec![[0,0]];
@@ -61,7 +61,7 @@ pub fn get_escape_offset(block: Block, snake: &Snake, x_bounds: [i32; 2], y_boun
 /// * `x_bounds: [i32;2]` - The x-bounds of the level, in game coordinates.
 /// * `y_bounds: [i32;2]` - The y-bounds of the level, in game coordinates.
 /// # Returns
-/// * [i32;2]` - An optimal escape offset or `[0, 0]` if the food did not get lucky enough to move.
+/// * `[i32;2]` - An optimal escape offset or `[0, 0]` if the food did not get lucky enough to move.
 pub fn escape(block: Block, snake: &Snake, x_bounds: [i32; 2], y_bounds: [i32; 2]) -> [i32;2] {
     let escape = get_escape_offset(block, snake, x_bounds, y_bounds);
 
