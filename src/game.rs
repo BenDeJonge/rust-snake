@@ -1,5 +1,5 @@
 // External imports.
-use piston_window::{Key, Context, G2d};
+use piston_window::{Key, Context, G2d, Glyphs};
 use piston_window::types::Color;
 use rand::{thread_rng, Rng};
 // Local imports.
@@ -7,13 +7,16 @@ use crate::block::Block;
 use crate::direction::Direction;
 use crate::snake::Snake;
 use crate::food;
-use crate::draw::{draw_block, draw_rectangle};
+use crate::draw::{draw_block, draw_rectangle, draw_text};
 
 // Constants.
 const FOOD_COLOR: Color = [0.80, 0.00, 0.00, 1.00];
 const BORDER_COLOR: Color = [0.00, 0.00, 0.00, 1.00];
 const BORDER_WIDTH: i32 = 1;
 const GAMEOVER_COLOR: Color = [0.90, 0.00, 0.00, 0.50];
+
+const SCORE_BORDER_WIDTH: i32 = 1;
+const SCORE_FONT_SIZE: u32 = 20;
 
 const MOVING_PERIOD: f64 = 0.1;
 const RESTART_TIME: f64 = 1.0;
@@ -29,6 +32,7 @@ pub struct Game {
 
     game_over: bool,
     waiting_time: f64,
+    score: i32,
 }
 
 impl Game {
@@ -38,15 +42,16 @@ impl Game {
     /// * `height: i32` - The game window height in pixels.
     /// # Returns
     /// * `Game` - The new Game instance.
-    pub fn new(width: i32, height: i32) -> Game {
+    pub fn new(width: i32, height: i32, starting_length: Option<i32>, starting_direction: Option<Direction>) -> Game {
         Game {
-            snake: Snake::new(2, 2, None, None),
+            snake: Snake::new(2, 2, starting_length, starting_direction),
             waiting_time: 0.0,
             food: Some(Block::new(6, 4)),
             width,
-            height,
+            height: height - SCORE_BORDER_WIDTH,
             game_over: false,
             direction_queue: Vec::new(),
+            score: 0,
         }
     }
 
@@ -93,6 +98,8 @@ impl Game {
         self.direction_queue.clear();
     }
 
+
+    /// Move the food if not eaten yet.
     pub fn update_food(&mut self) {
         match self.food {
             Some(b) => {
@@ -103,27 +110,38 @@ impl Game {
         };
     }
 
-    /// Draw all game elements: the snake, the borders and optional food and game over symbols.
+
+    /// Draw all game elements: the snake, the borders, food, game over symbols and the score.
     /// # Arguments
+    /// * `glyphs: &mut piston_window::Glyphs` - The characters to use for drawing.
     /// * `con: &piston_window::Context` - The context in which to draw.
     /// * `g: &mut G2d` - The 2d graphics driver to use.
-    pub fn draw(&self, con: &Context, g: &mut G2d) {
+    pub fn draw(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         // Drawing the snake and food.
         self.snake.draw(con, g);
         match self.food {
             Some(block) => draw_block(block, FOOD_COLOR, con, g),
             None => (),
         }
-
+        
         // Drawing the top, bottom, left and right borders of the screen.
         draw_rectangle(BORDER_COLOR, 0, 0, self.width, BORDER_WIDTH, con, g);
         draw_rectangle(BORDER_COLOR, 0, self.height - BORDER_WIDTH, self.width, BORDER_WIDTH, con, g);
         draw_rectangle(BORDER_COLOR, 0, 0, BORDER_WIDTH, self.height, con, g);
         draw_rectangle(BORDER_COLOR, self.width - BORDER_WIDTH, 0, BORDER_WIDTH, self.height, con, g);
 
-        // Drawing a game over text.
+        // Drawing the score border.
+        draw_rectangle(BORDER_COLOR, 0, self.height, self.width, SCORE_BORDER_WIDTH, con, g);
+        // Drawing score text.
+        draw_text(
+            &self.score.to_string().as_str(),
+            self.width/2, self.height + SCORE_BORDER_WIDTH/2,
+            FOOD_COLOR, SCORE_FONT_SIZE, 
+            glyphs, con, g);
+
+        // Drawing a game over screen.
         if self.game_over {
-            draw_rectangle(GAMEOVER_COLOR, 0, 0, self.width, self.height, con, g);
+            draw_rectangle(GAMEOVER_COLOR, 0, SCORE_BORDER_WIDTH, self.width, self.height, con, g);
         }
     }
 
@@ -161,6 +179,7 @@ impl Game {
         self.waiting_time = 0.0;
         self.food = Some(Block::new(6, 4));
         self.game_over = false;
+        self.score = 0;
     }
 
 
@@ -181,13 +200,14 @@ impl Game {
         self.food = Some(food);
     }
 
-    
+
     /// Check if the snake has eaten food.
     pub fn check_eaten(&mut self) {
         // The head position coincides with the food.
         if self.snake.head_position() == self.food.unwrap() {
             self.food = None;
             self.snake.restore_tail();
+            self.score += 1;
         }
     }
 

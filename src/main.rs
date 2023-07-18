@@ -25,17 +25,27 @@ fn main() {
     .build()
     .unwrap();
 
-    let mut game = Game::new(width, height);
-    // Clearing the window.
+    // Loading text assets.
+    let assets = find_folder::Search::ParentsThenKids(3,3)
+                 .for_folder("assets")
+                 .unwrap();
+    let ref font = assets.join("retro-gaming.ttf");
+    let mut glyphs = window.load_font(font).unwrap();
+
+    // Starting the main loop.
+    let mut game = Game::new(width, height, None, None);
     while let Some(event) = window.next() {
         // Catching game events corresponding to button presses. Handling in-game logic.
         if let Some(Button::Keyboard(key)) = event.press_args() {
             game.key_pressed(key);
         }
         // Passing _ as OpenGL Device.
-        window.draw_2d(&event, |con, g, _| {
+        window.draw_2d(&event, |con, g, device| {
+            // Clearing the window abd drawing a new one.
             clear(BACK_COLOR, g);
-            game.draw(&con, g);
+            game.draw(&mut glyphs, &con, g);
+            // Clearing the glyphs buffer at the end of the frame drawing.
+            glyphs.factory.encoder.flush(device);
         });
         // Update event with anonymous function closure.
         event.update(|arg| {

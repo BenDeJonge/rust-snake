@@ -1,6 +1,7 @@
 // External imports.
-use piston_window::{rectangle, Context, G2d};
+use piston_window::{rectangle, Context, G2d, Glyphs, Transformed};
 use piston_window::types::Color;
+use piston_window::text;
 
 use crate::block::Block;
 
@@ -54,4 +55,28 @@ pub fn draw_rectangle(color: Color, x: i32, y: i32, width: i32, height: i32, con
         con.transform,
         g,
     )
+}
+
+
+/// Draw a string in the context.
+/// # Arguments
+/// * `text: &str` - The string to draw.
+/// * `x: i32` - The x coordinate in game coordinates.
+/// * `y: i32` - The y coordinate in game coordinates.
+/// * `color: piston_window::Color` - The text color.
+/// * `font_size: u32` - The text size.
+/// * `glyphs: &mut piston_window::Glyphs` - The characterset to use.
+/// * `con: &piston_window::Context` - A refrence to the games context.
+/// * `g: &mut piston_window::G2d` - A mutable reference to the graphics engine used for drawing.
+pub fn draw_text(text: &str, x: i32, y: i32, color: Color, font_size: u32, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
+    let gui_x = to_pixels(x);
+    let gui_y = to_pixels(y);
+    text::Text::new_color(color, font_size)
+        .draw(
+            text,
+            glyphs,
+            &con.draw_state,
+            con.transform.trans(gui_x, gui_y),
+            g)
+        .unwrap();
 }
