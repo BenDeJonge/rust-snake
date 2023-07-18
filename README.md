@@ -15,4 +15,4 @@ One of my favorite ways to learn a new programming language, is by implementing 
 
 # Demo
 
-[Watch me being bad at my own game!](https://github.com/BenDeJonge/rust-snake/tree/develop/assets/rust-snake.gif)
+![Watch me being bad at my own game!](https://github.com/BenDeJonge/rust-snake/tree/develop/assets/rust-snake.gif)
