@@ -1,0 +1,38 @@
+name: rust-ci
+
+on:
+  push:
+    branches:
+        - main
+  pull_request:
+    branches:
+        - main
+
+env: 
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-10
+    
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+    steps:
+        - name: Set up Rust
+          uses: actions/checkout@v3
+        - name: Update Rust
+          run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+        - name: Install cargo-audit
+          run: cargo install cargo-audit
+        - name: Build
+          run: cargo run --verbose
+        - name: Test
+          run: cargo test --verbose
+        - name: Clippy
+          run: cargo clippy --verbose -- -D warnings
+        - name: Audit
+          run: cargo audit
