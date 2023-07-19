@@ -1,11 +1,12 @@
 // External imports.
-use std::collections::VecDeque;
-use piston_window::{Context, G2d};
 use piston_window::types::Color;
+use piston_window::{Context, G2d};
+use std::collections::VecDeque;
+
 // Importing local modules from the crate root.
-use crate::draw::draw_block;
 use crate::block::Block;
 use crate::direction::Direction;
+use crate::draw::draw_block;
 
 const SNAKE_HEAD_COLOR: Color = [0.00, 0.60, 0.00, 1.00];
 const SNAKE_BODY_COLOR: Color = [0.00, 0.80, 0.00, 1.00];
@@ -15,14 +16,13 @@ const SNAKE_STARTING_LENGTH: i32 = 3;
 pub struct Snake {
     /// The current and next direction in which the snake is travelling.
     current_direction: Direction,
-    /// The (x,y) coordinate of the tail Block. 
+    /// The (x,y) coordinate of the tail Block.
     /// When eating food, the snake gets elongated by the tail block, resulting in a Block.
     /// During all other moves, the tail is not present, resulting in a None.
     tail: Option<Block>,
     /// The (x,y) coordinates of all body Blocks.
     body: VecDeque<Block>,
 }
-
 
 impl Snake {
     /// Instantiate a new Snake.
@@ -33,7 +33,7 @@ impl Snake {
     /// * `direction: Option<Direction>` - The initial direction of the Snake, by default Direction::Right.
     /// # Returns
     /// * `Snake` - The new Snake instance.
-    pub fn new(x: i32, y:i32, length: Option<i32>, direction: Option<Direction>) -> Snake {
+    pub fn new(x: i32, y: i32, length: Option<i32>, direction: Option<Direction>) -> Snake {
         // Getting offsets for direction
         let (dx, dy) = match direction {
             Some(Direction::Up) => (0, -1),
@@ -41,7 +41,7 @@ impl Snake {
             Some(Direction::Left) => (-1, 0),
             _ => (1, 0),
         };
-        
+
         // Creating a body.
         let mut body = VecDeque::new();
         let length = length.unwrap_or(SNAKE_STARTING_LENGTH);
@@ -57,41 +57,33 @@ impl Snake {
             body,
             tail: None,
         }
-
     }
-
 
     /// Get the length of the Snake body VecDeque.
     pub fn len(&self) -> i32 {
         self.body.len() as i32
     }
 
-
     /// Draw all blocks in the Snakes body inside the context using the graphics engine.
     pub fn draw(&self, con: &Context, g: &mut G2d) {
-        let mut counter = 0;
-        for block in &self.body {
-            if counter > 0 {
+        for (i, block) in self.body.iter().enumerate() {
+            if i > 0 {
                 draw_block(*block, SNAKE_BODY_COLOR, con, g)
             } else {
                 draw_block(*block, SNAKE_HEAD_COLOR, con, g)
             }
-            counter += 1
         }
     }
-
 
     /// Find the head position of the snake.
     pub fn head_position(&self) -> Block {
         *self.body.front().unwrap()
     }
 
-
     /// Get the direction the head is moving in.
     pub fn head_direction(&self) -> Direction {
         self.current_direction
     }
-
 
     /// Move the Snake forward in the current direction.
     /// This method modifies the Snakes body, so requires a mutable reference to self.
@@ -99,10 +91,9 @@ impl Snake {
     /// * `direction: Option<Direction>` - Receives an optional Direction, depending on whether or not a key was pressed.
     pub fn move_forward(&mut self, direction: Option<Direction>) {
         // Unwrap the optional direction input.
-        match direction {
-            Some(dir) => self.current_direction = dir,
-            None => (),
-        }
+        if let Some(dir) = direction {
+            self.current_direction = dir
+        };
         // Get the location of the new block based on the head position and the direction.
         // Note the required comma after each new match statement.
         let head = self.head_position();
@@ -129,7 +120,6 @@ impl Snake {
         self.tail = Some(self.body.pop_back().unwrap());
     }
 
-
     /// Get the next head position based on the movement direction.
     /// # Arguments
     /// * `direction: Option<Direction>` - The movement direction, is None when no input is given.
@@ -144,19 +134,29 @@ impl Snake {
         };
         // Update the coordinate of the head.
         match moving_direction {
-            Direction::Up => Block{ x: head.x, y: head.y - 1 },
-            Direction::Down => Block{ x: head.x, y:head.y + 1 },
-            Direction::Left => Block{ x: head.x - 1, y:head.y },
-            Direction::Right => Block { x: head.x + 1, y: head.y },
+            Direction::Up => Block {
+                x: head.x,
+                y: head.y - 1,
+            },
+            Direction::Down => Block {
+                x: head.x,
+                y: head.y + 1,
+            },
+            Direction::Left => Block {
+                x: head.x - 1,
+                y: head.y,
+            },
+            Direction::Right => Block {
+                x: head.x + 1,
+                y: head.y,
+            },
         }
     }
 
-
     /// Add the tail block when the snake has eaten food.
     pub fn restore_tail(&mut self) {
-        self.body.push_back(self.tail.clone().unwrap())
+        self.body.push_back(self.tail.unwrap())
     }
-
 
     /// Check if a block overlaps with the Snake body.
     /// # Arguments
@@ -179,5 +179,4 @@ impl Snake {
         }
         false
     }
-
 }

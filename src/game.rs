@@ -1,13 +1,13 @@
 // External imports.
-use piston_window::{Key, Context, G2d, Glyphs};
 use piston_window::types::Color;
+use piston_window::{Context, G2d, Glyphs, Key};
 use rand::{thread_rng, Rng};
 // Local imports.
 use crate::block::Block;
 use crate::direction::Direction;
-use crate::snake::Snake;
-use crate::food;
 use crate::draw::{draw_block, draw_rectangle, draw_text};
+use crate::food;
+use crate::snake::Snake;
 
 // Constants.
 const FOOD_COLOR: Color = [0.80, 0.00, 0.00, 1.00];
@@ -20,7 +20,6 @@ const SCORE_FONT_SIZE: u32 = 20;
 
 const MOVING_PERIOD: f64 = 0.1;
 const RESTART_TIME: f64 = 1.0;
-
 
 pub struct Game {
     snake: Snake,
@@ -42,7 +41,12 @@ impl Game {
     /// * `height: i32` - The game window height in pixels.
     /// # Returns
     /// * `Game` - The new Game instance.
-    pub fn new(width: i32, height: i32, starting_length: Option<i32>, starting_direction: Option<Direction>) -> Game {
+    pub fn new(
+        width: i32,
+        height: i32,
+        starting_length: Option<i32>,
+        starting_direction: Option<Direction>,
+    ) -> Game {
         Game {
             snake: Snake::new(2, 2, starting_length, starting_direction),
             waiting_time: 0.0,
@@ -55,13 +59,12 @@ impl Game {
         }
     }
 
-
     /// React to a keypress.
     /// # Arguments
     /// * `piston_window::Key` - The key being pressed.
     pub fn key_pressed(&mut self, key: Key) {
         if self.game_over {
-            return
+            return;
         }
 
         // Associating all valid keys with the Some part of the Option and invalid ones with the None part.
@@ -72,14 +75,13 @@ impl Game {
             Key::Right => Some(Direction::Right),
             _ => Some(self.snake.head_direction()),
         };
-        
+
         // The snake cannot turn around.
         if direction.unwrap() == self.snake.head_direction().opposite() {
-            return
+            return;
         }
         self.direction_queue.push(direction);
     }
-
 
     /// Move to the next position and ead food, stopping the game in case of a death.
     pub fn update_snake(&mut self) {
@@ -98,18 +100,13 @@ impl Game {
         self.direction_queue.clear();
     }
 
-
     /// Move the food if not eaten yet.
     pub fn update_food(&mut self) {
-        match self.food {
-            Some(b) => {
-                let offset = food::escape(b, &self.snake, [0, self.width], [0, self.height]);
-                self.food = Some(Block::new(b.x + offset[0], b.y + offset[1]))
-            },
-            None => return,
-        };
+        if let Some(food) = self.food {
+            let offset = food::escape(food, &self.snake, [0, self.width], [0, self.height]);
+            self.food = Some(Block::new(food.x + offset[0], food.y + offset[1]))
+        }
     }
-
 
     /// Draw all game elements: the snake, the borders, food, game over symbols and the score.
     /// # Arguments
@@ -119,39 +116,83 @@ impl Game {
     pub fn draw(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         // Drawing the snake and food.
         self.snake.draw(con, g);
-        match self.food {
-            Some(block) => draw_block(block, FOOD_COLOR, con, g),
-            None => (),
-        }
-        
+        if let Some(food) = self.food {
+            draw_block(food, FOOD_COLOR, con, g);
+        };
+
         // Drawing the top, bottom, left and right borders of the screen.
-        draw_rectangle(BORDER_COLOR, 0, 0, self.width, BORDER_WIDTH, con, g);
-        draw_rectangle(BORDER_COLOR, 0, self.height - BORDER_WIDTH, self.width, BORDER_WIDTH, con, g);
-        draw_rectangle(BORDER_COLOR, 0, 0, BORDER_WIDTH, self.height, con, g);
-        draw_rectangle(BORDER_COLOR, self.width - BORDER_WIDTH, 0, BORDER_WIDTH, self.height, con, g);
+        draw_rectangle(
+            BORDER_COLOR,
+            Block::new(0, 0),
+            self.width,
+            BORDER_WIDTH,
+            con,
+            g,
+        );
+        draw_rectangle(
+            BORDER_COLOR,
+            Block::new(0, self.height - BORDER_WIDTH),
+            self.width,
+            BORDER_WIDTH,
+            con,
+            g,
+        );
+        draw_rectangle(
+            BORDER_COLOR,
+            Block::new(0, 0),
+            BORDER_WIDTH,
+            self.height,
+            con,
+            g,
+        );
+        draw_rectangle(
+            BORDER_COLOR,
+            Block::new(self.width - BORDER_WIDTH, 0),
+            BORDER_WIDTH,
+            self.height,
+            con,
+            g,
+        );
 
         // Drawing the score border.
-        draw_rectangle(BORDER_COLOR, 0, self.height, self.width, SCORE_BORDER_WIDTH, con, g);
+        draw_rectangle(
+            BORDER_COLOR,
+            Block::new(0, self.height),
+            self.width,
+            SCORE_BORDER_WIDTH,
+            con,
+            g,
+        );
         // Drawing score text.
         draw_text(
-            &self.score.to_string().as_str(),
-            self.width/2, self.height + SCORE_BORDER_WIDTH/2,
-            FOOD_COLOR, SCORE_FONT_SIZE, 
-            glyphs, con, g);
+            self.score.to_string().as_str(),
+            Block::new(self.width / 2, self.height + SCORE_BORDER_WIDTH / 2),
+            FOOD_COLOR,
+            SCORE_FONT_SIZE,
+            glyphs,
+            con,
+            g,
+        );
 
         // Drawing a game over screen.
         if self.game_over {
-            draw_rectangle(GAMEOVER_COLOR, 0, SCORE_BORDER_WIDTH, self.width, self.height, con, g);
+            draw_rectangle(
+                GAMEOVER_COLOR,
+                Block::new(0, SCORE_BORDER_WIDTH),
+                self.width,
+                self.height,
+                con,
+                g,
+            );
         }
     }
-
 
     /// Move the game one tick, checking for game over, food presence and drawing the snake.
     /// # Arguments
     /// * `delta_time: f64` - The timestep of the tick in seconds.
     pub fn update(&mut self, delta_time: f64) {
         self.waiting_time += delta_time;
-        
+
         // Restarting after some time.
         if self.game_over {
             if self.waiting_time > RESTART_TIME {
@@ -171,7 +212,6 @@ impl Game {
         }
     }
 
-
     /// Reset all the games attributes.
     pub fn restart(&mut self) {
         self.snake = Snake::new(2, 2, None, None);
@@ -182,24 +222,24 @@ impl Game {
         self.score = 0;
     }
 
-
     /// Respawn food at a random location after a previous one has been eaten.
     pub fn add_food(&mut self) {
         // Spawn food at a random location.
         let mut rng = thread_rng();
         let mut food = Block::new(
             rng.gen_range(1..self.width - 1),
-            rng.gen_range(1..self.height - 1));
+            rng.gen_range(1..self.height - 1),
+        );
         // Food cannot spawn on the snake.
         while self.snake.overlap_tail(food) {
             food = Block::new(
                 rng.gen_range(1..self.width - 1),
-                rng.gen_range(1..self.height - 1));
-            }
+                rng.gen_range(1..self.height - 1),
+            );
+        }
         // Updating the food attribute, hence the mutable reference to self.
         self.food = Some(food);
     }
-
 
     /// Check if the snake has eaten food.
     pub fn check_eaten(&mut self) {
@@ -211,7 +251,6 @@ impl Game {
         }
     }
 
-
     /// Check if the movement direction does not kill the snake.
     /// # Arguments
     /// * `direction: Option<Direction>` - The selected movement direction.
@@ -219,7 +258,7 @@ impl Game {
     /// * `bool` - Whether (true) or not (false) the snake survives the selected move.
     pub fn check_snake_alive(&self, direction: Option<Direction>) -> bool {
         let destination = self.snake.next_head(direction);
-        !self.snake.overlap_tail(destination) && 
-        !destination.out_of_bounds([0, self.width], [0, self.height])
+        !self.snake.overlap_tail(destination)
+            && !destination.out_of_bounds([0, self.width], [0, self.height])
     }
 }

@@ -14,7 +14,7 @@ impl Block {
     /// # Returns
     /// * `Block` - The new Block instance.
     pub fn new(x: i32, y: i32) -> Block {
-        Block { x, y, }
+        Block { x, y }
     }
 
     /// Check whether this block falls within given bounds.
@@ -24,6 +24,9 @@ impl Block {
     /// # Returns
     /// * `bool` - Whether (true) or not (false) the Block falls within the bounds.
     pub fn out_of_bounds(&self, x_bounds: [i32; 2], y_bounds: [i32; 2]) -> bool {
-        self.x <= x_bounds[0] || self.x >= x_bounds[1] - 1 || self.y <= y_bounds[0] || self.y >= y_bounds[1] - 1
+        self.x <= x_bounds[0]
+            || self.x >= x_bounds[1] - 1
+            || self.y <= y_bounds[0]
+            || self.y >= y_bounds[1] - 1
     }
 }

@@ -1,7 +1,7 @@
 // External imports.
-use piston_window::{rectangle, Context, G2d, Glyphs, Transformed};
-use piston_window::types::Color;
 use piston_window::text;
+use piston_window::types::Color;
+use piston_window::{rectangle, Context, G2d, Glyphs, Transformed};
 
 use crate::block::Block;
 
@@ -14,7 +14,7 @@ const BLOCK_SIZE: f64 = 25.0;
 /// # Returns
 /// * `f64` - The game coordinate as a pixel value.
 pub fn to_pixels(game_coord: i32) -> f64 {
-    return (game_coord as f64) * BLOCK_SIZE;
+    (game_coord as f64) * BLOCK_SIZE
 }
 
 /// Draw a single block in the context.
@@ -46,17 +46,28 @@ pub fn draw_block(block: Block, color: Color, con: &Context, g: &mut G2d) {
 /// * `height: i32` - The height of the rectangle in blocks.
 /// * `con: &piston_window::Context` - A reference to the games context.
 /// * `g: &mut piston_window::G2d` - A mutable reference to the graphics engine used for drawing.
-pub fn draw_rectangle(color: Color, x: i32, y: i32, width: i32, height: i32, con: &Context, g: &mut G2d) {
-    let gui_x = to_pixels(x);
-    let gui_y = to_pixels(y);
+pub fn draw_rectangle(
+    color: Color,
+    top_left: Block,
+    width: i32,
+    height: i32,
+    con: &Context,
+    g: &mut G2d,
+) {
+    let gui_x = to_pixels(top_left.x);
+    let gui_y = to_pixels(top_left.y);
     rectangle(
         color,
-        [gui_x, gui_y, BLOCK_SIZE*(width as f64), BLOCK_SIZE*(height as f64)],
+        [
+            gui_x,
+            gui_y,
+            BLOCK_SIZE * (width as f64),
+            BLOCK_SIZE * (height as f64),
+        ],
         con.transform,
         g,
     )
 }
-
 
 /// Draw a string in the context.
 /// # Arguments
@@ -68,15 +79,24 @@ pub fn draw_rectangle(color: Color, x: i32, y: i32, width: i32, height: i32, con
 /// * `glyphs: &mut piston_window::Glyphs` - The characterset to use.
 /// * `con: &piston_window::Context` - A refrence to the games context.
 /// * `g: &mut piston_window::G2d` - A mutable reference to the graphics engine used for drawing.
-pub fn draw_text(text: &str, x: i32, y: i32, color: Color, font_size: u32, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
-    let gui_x = to_pixels(x);
-    let gui_y = to_pixels(y);
+pub fn draw_text(
+    text: &str,
+    top_left: Block,
+    color: Color,
+    font_size: u32,
+    glyphs: &mut Glyphs,
+    con: &Context,
+    g: &mut G2d,
+) {
+    let gui_x = to_pixels(top_left.x);
+    let gui_y = to_pixels(top_left.y);
     text::Text::new_color(color, font_size)
         .draw(
             text,
             glyphs,
             &con.draw_state,
             con.transform.trans(gui_x, gui_y),
-            g)
+            g,
+        )
         .unwrap();
 }
