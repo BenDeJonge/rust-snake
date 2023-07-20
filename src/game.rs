@@ -2,11 +2,14 @@
 use piston_window::types::Color;
 use piston_window::{Context, G2d, Glyphs, Key};
 use rand::{thread_rng, Rng};
+use std::collections::HashMap;
 // Local imports.
 use crate::block::Block;
 use crate::direction::Direction;
+use crate::draw::show_scores;
 use crate::draw::{draw_block, draw_rectangle, draw_text};
 use crate::food;
+use crate::score::Score;
 use crate::snake::Snake;
 
 // Constants.
@@ -14,12 +17,13 @@ const FOOD_COLOR: Color = [0.80, 0.00, 0.00, 1.00];
 const BORDER_COLOR: Color = [0.00, 0.00, 0.00, 1.00];
 const BORDER_WIDTH: i32 = 1;
 const GAMEOVER_COLOR: Color = [0.90, 0.00, 0.00, 0.50];
+const GAMEOVER_TEXT_COLOR: Color = [1.0, 1.0, 1.0, 0.9];
 
 const SCORE_BORDER_WIDTH: i32 = 1;
 const SCORE_FONT_SIZE: u32 = 20;
 
 const MOVING_PERIOD: f64 = 0.1;
-const RESTART_TIME: f64 = 1.0;
+const FOOD_SPEED_INCREASE: i32 = 5;
 
 pub struct Game {
     snake: Snake,
@@ -31,7 +35,9 @@ pub struct Game {
 
     game_over: bool,
     waiting_time: f64,
+
     score: i32,
+    pub score_written: bool,
 }
 
 impl Game {
@@ -56,16 +62,31 @@ impl Game {
             game_over: false,
             direction_queue: Vec::new(),
             score: 0,
+            score_written: false,
         }
     }
 
     /// React to a keypress.
     /// # Arguments
     /// * `piston_window::Key` - The key being pressed.
-    pub fn key_pressed(&mut self, key: Key) {
+    pub fn key_pressed(
+        &mut self,
+        key: Key,
+        // scores: &HashMap<i32, Score>,
+        // top_left: Block,
+        // color: Color,
+        // font_size: u32,
+        // glyphs: &mut Glyphs,
+        // con: &Context,
+        // g: &mut G2d,
+    ) {
         if self.game_over {
-            return;
-        }
+            match key {
+                Key::Space => self.restart(),
+                // Key::S => show_scores(scores, top_left, color, font_size, glyphs, con, g),
+                _ => return,
+            }
+        };
 
         // Associating all valid keys with the Some part of the Option and invalid ones with the None part.
         let direction = match key {
@@ -94,32 +115,27 @@ impl Game {
             self.check_eaten();
         } else {
             self.game_over = true;
+            // TODO: Checking for high score.
         }
         // Resetting.
         self.waiting_time = 0.0;
         self.direction_queue.clear();
     }
 
-    /// Move the food if not eaten yet.
+    /// Move the food if not eaten yet and the game is not over.
     pub fn update_food(&mut self) {
+        let speed = if self.game_over {
+            0
+        } else {
+            FOOD_SPEED_INCREASE
+        };
         if let Some(food) = self.food {
-            let offset = food::escape(food, &self.snake, [0, self.width], [0, self.height]);
+            let offset = food::escape(food, &self.snake, [0, self.width], [0, self.height], speed);
             self.food = Some(Block::new(food.x + offset[0], food.y + offset[1]))
         }
     }
 
-    /// Draw all game elements: the snake, the borders, food, game over symbols and the score.
-    /// # Arguments
-    /// * `glyphs: &mut piston_window::Glyphs` - The characters to use for drawing.
-    /// * `con: &piston_window::Context` - The context in which to draw.
-    /// * `g: &mut G2d` - The 2d graphics driver to use.
-    pub fn draw(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
-        // Drawing the snake and food.
-        self.snake.draw(con, g);
-        if let Some(food) = self.food {
-            draw_block(food, FOOD_COLOR, con, g);
-        };
-
+    fn _draw_background(&self, con: &Context, g: &mut G2d) {
         // Drawing the top, bottom, left and right borders of the screen.
         draw_rectangle(
             BORDER_COLOR,
@@ -163,7 +179,9 @@ impl Game {
             con,
             g,
         );
-        // Drawing score text.
+    }
+
+    fn _draw_score_text(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         draw_text(
             self.score.to_string().as_str(),
             Block::new(self.width / 2, self.height + SCORE_BORDER_WIDTH / 2),
@@ -173,18 +191,84 @@ impl Game {
             con,
             g,
         );
+    }
+
+    fn _draw_game_over_screen(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
+        draw_rectangle(
+            GAMEOVER_COLOR,
+            Block::new(0, SCORE_BORDER_WIDTH),
+            self.width,
+            self.height,
+            con,
+            g,
+        );
+        let highscore = match self.score_written {
+            true => " - HIGHSCORE",
+            false => "",
+        };
+        draw_text(
+            &format!(
+                "GAME OVER\n{} POINTS{}\n<SPACE> TO PLAY\n<S> TO SEE SCORES",
+                self.score, highscore
+            ),
+            Block::new(BORDER_WIDTH, BORDER_WIDTH),
+            GAMEOVER_TEXT_COLOR,
+            32,
+            glyphs,
+            con,
+            g,
+        );
+    }
+
+    fn _draw_scoreboard(
+        &self,
+        scores: &HashMap<i32, Score>,
+        glyphs: &mut Glyphs,
+        con: &Context,
+        g: &mut G2d,
+    ) {
+        show_scores(
+            scores,
+            Block { x: 0, y: 0 },
+            GAMEOVER_TEXT_COLOR,
+            10,
+            glyphs,
+            con,
+            g,
+        )
+    }
+
+    /// Draw all game elements: the snake, the borders, food, game over symbols and the score.
+    /// # Arguments
+    /// * `glyphs: &mut piston_window::Glyphs` - The characters to use for drawing.
+    /// * `con: &piston_window::Context` - The context in which to draw.
+    /// * `g: &mut G2d` - The 2d graphics driver to use.
+    pub fn draw(
+        &self,
+        // key: Option<Key>,
+        // scores: &HashMap<i32, Score>,
+        glyphs: &mut Glyphs,
+        con: &Context,
+        g: &mut G2d,
+    ) {
+        // Drawing the snake and food.
+        self.snake.draw(con, g);
+        if let Some(food) = self.food {
+            draw_block(food, FOOD_COLOR, con, g);
+        };
+
+        self._draw_background(con, g);
+        self._draw_score_text(glyphs, con, g);
 
         // Drawing a game over screen.
         if self.game_over {
-            draw_rectangle(
-                GAMEOVER_COLOR,
-                Block::new(0, SCORE_BORDER_WIDTH),
-                self.width,
-                self.height,
-                con,
-                g,
-            );
+            self._draw_game_over_screen(glyphs, con, g);
         }
+
+        // TODO: how to draw scoreboard while holding down S?
+        // if let Some(Key::S) = key {
+        //     self._draw_scoreboard(scores, glyphs, con, g)
+        // }
     }
 
     /// Move the game one tick, checking for game over, food presence and drawing the snake.
@@ -193,13 +277,6 @@ impl Game {
     pub fn update(&mut self, delta_time: f64) {
         self.waiting_time += delta_time;
 
-        // Restarting after some time.
-        if self.game_over {
-            if self.waiting_time > RESTART_TIME {
-                self.restart();
-            }
-            return;
-        }
         // Drawing food if not yet food.
         match self.food {
             Some(_) => (),
@@ -220,6 +297,7 @@ impl Game {
         self.food = Some(Block::new(6, 4));
         self.game_over = false;
         self.score = 0;
+        self.score_written = false;
     }
 
     /// Respawn food at a random location after a previous one has been eaten.
@@ -260,5 +338,13 @@ impl Game {
         let destination = self.snake.next_head(direction);
         !self.snake.overlap_tail(destination)
             && !destination.out_of_bounds([0, self.width], [0, self.height])
+    }
+
+    pub fn game_over(&self) -> bool {
+        self.game_over
+    }
+
+    pub fn score(&self) -> i32 {
+        self.score
     }
 }
