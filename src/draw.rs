@@ -2,8 +2,11 @@
 use piston_window::text;
 use piston_window::types::Color;
 use piston_window::{rectangle, Context, G2d, Glyphs, Transformed};
+use std::collections::HashMap;
 
 use crate::block::Block;
+use crate::dateformat;
+use crate::score;
 
 // Setting up a constant for the block size in pixels.
 const BLOCK_SIZE: f64 = 25.0;
@@ -88,15 +91,40 @@ pub fn draw_text(
     con: &Context,
     g: &mut G2d,
 ) {
-    let gui_x = to_pixels(top_left.x);
-    let gui_y = to_pixels(top_left.y);
-    text::Text::new_color(color, font_size)
-        .draw(
-            text,
-            glyphs,
-            &con.draw_state,
-            con.transform.trans(gui_x, gui_y),
-            g,
-        )
-        .unwrap();
+    for (i_line, line) in text.split('\n').enumerate() {
+        let gui_x = to_pixels(top_left.x);
+        let gui_y = to_pixels(top_left.y) + (font_size * (i_line + 1) as u32) as f64 * 1.1;
+        text::Text::new_color(color, font_size)
+            .draw(
+                line,
+                glyphs,
+                &con.draw_state,
+                con.transform.trans(gui_x, gui_y),
+                g,
+            )
+            .unwrap();
+    }
+}
+
+pub fn show_scores(
+    scores: &HashMap<i32, score::Score>,
+    top_left: Block,
+    color: Color,
+    font_size: u32,
+    glyphs: &mut Glyphs,
+    con: &Context,
+    g: &mut G2d,
+) {
+    let mut text = String::new();
+    for rank in 1..score::NUMBER_HIGH_SCORES + 1 {
+        let score = scores.get(&rank).unwrap();
+        text.push_str(&format!(
+            "{:2}. {:3} {:10} {:19}\n",
+            rank,
+            score.score(),
+            score.player(),
+            score.timestamp().format(dateformat::FORMAT)
+        ));
+    }
+    draw_text(&text, top_left, color, font_size, glyphs, con, g);
 }

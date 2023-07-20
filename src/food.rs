@@ -6,8 +6,6 @@ use rand::prelude::thread_rng;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
-const FOOD_SPEED_INCREASE: i32 = 5;
-
 /// Calculate the Euclidian distance between two Blocks.
 /// # Arguments
 /// * `block1: Block` - The first Block.
@@ -63,11 +61,17 @@ pub fn get_escape_offset(
 /// * `y_bounds: [i32;2]` - The y-bounds of the level, in game coordinates.
 /// # Returns
 /// * `[i32;2]` - An optimal escape offset or `[0, 0]` if the food did not get lucky enough to move.
-pub fn escape(block: Block, snake: &Snake, x_bounds: [i32; 2], y_bounds: [i32; 2]) -> [i32; 2] {
+pub fn escape(
+    block: Block,
+    snake: &Snake,
+    x_bounds: [i32; 2],
+    y_bounds: [i32; 2],
+    speed: i32,
+) -> [i32; 2] {
     let escape = get_escape_offset(block, snake, x_bounds, y_bounds);
 
     let area = (x_bounds[1] - x_bounds[0]) * (y_bounds[1] - y_bounds[0]);
-    let weights = [(snake.len() * FOOD_SPEED_INCREASE).clamp(0, area), area];
+    let weights = [(snake.len() * speed).clamp(0, area), area];
     let escape_weight = thread_rng().gen_range(0..weights[1]);
 
     if escape_weight <= weights[0] {
