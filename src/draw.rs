@@ -123,7 +123,7 @@ pub fn show_scores(
             rank,
             score.score(),
             score.player(),
-            score.timestamp().format(dateformat::FORMAT)
+            score.timestamp().format(dateformat::DISPLAY_FORMAT)
         ));
     }
     draw_text(&text, top_left, color, font_size, glyphs, con, g);

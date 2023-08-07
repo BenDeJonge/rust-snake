@@ -2,6 +2,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use serde::{self, Deserialize, Deserializer, Serializer};
 
 pub const FORMAT: &str = "%Y/%m/%d %H:%M:%S";
+pub const DISPLAY_FORMAT: &str = "%Y/%m/%d";
 
 pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
 where

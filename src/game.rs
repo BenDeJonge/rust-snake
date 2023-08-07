@@ -3,6 +3,7 @@ use piston_window::types::Color;
 use piston_window::{Context, G2d, Glyphs, Key};
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
+
 // Local imports.
 use crate::block::Block;
 use crate::direction::Direction;
@@ -18,12 +19,19 @@ const BORDER_COLOR: Color = [0.00, 0.00, 0.00, 1.00];
 const BORDER_WIDTH: i32 = 1;
 const GAMEOVER_COLOR: Color = [0.90, 0.00, 0.00, 0.50];
 const GAMEOVER_TEXT_COLOR: Color = [1.0, 1.0, 1.0, 0.9];
-
 const SCORE_BORDER_WIDTH: i32 = 1;
 const SCORE_FONT_SIZE: u32 = 20;
-
 const MOVING_PERIOD: f64 = 0.1;
 const FOOD_SPEED_INCREASE: i32 = 5;
+
+struct Borders {
+    top_border: Block,
+    bottom_border: Block,
+    left_border: Block,
+    right_border: Block,
+    score_border: Block,
+    high_score_border: Block,
+}
 
 pub struct Game {
     snake: Snake,
@@ -38,6 +46,8 @@ pub struct Game {
 
     score: i32,
     pub score_written: bool,
+
+    borders: Borders,
 }
 
 impl Game {
@@ -63,6 +73,14 @@ impl Game {
             direction_queue: Vec::new(),
             score: 0,
             score_written: false,
+            borders: Borders {
+                top_border: Block::new(0, 0),
+                bottom_border: Block::new(0, height - BORDER_WIDTH - SCORE_BORDER_WIDTH),
+                left_border: Block::new(0, 0),
+                right_border: Block::new(width - BORDER_WIDTH, 0),
+                score_border: Block::new(0, height - BORDER_WIDTH),
+                high_score_border: Block::new(BORDER_WIDTH, height / 2 + 1),
+            },
         }
     }
 
@@ -137,9 +155,10 @@ impl Game {
 
     fn _draw_background(&self, con: &Context, g: &mut G2d) {
         // Drawing the top, bottom, left and right borders of the screen.
+
         draw_rectangle(
             BORDER_COLOR,
-            Block::new(0, 0),
+            self.borders.top_border,
             self.width,
             BORDER_WIDTH,
             con,
@@ -147,7 +166,7 @@ impl Game {
         );
         draw_rectangle(
             BORDER_COLOR,
-            Block::new(0, self.height - BORDER_WIDTH),
+            self.borders.bottom_border,
             self.width,
             BORDER_WIDTH,
             con,
@@ -155,7 +174,7 @@ impl Game {
         );
         draw_rectangle(
             BORDER_COLOR,
-            Block::new(0, 0),
+            self.borders.left_border,
             BORDER_WIDTH,
             self.height,
             con,
@@ -163,7 +182,7 @@ impl Game {
         );
         draw_rectangle(
             BORDER_COLOR,
-            Block::new(self.width - BORDER_WIDTH, 0),
+            self.borders.right_border,
             BORDER_WIDTH,
             self.height,
             con,
@@ -173,7 +192,7 @@ impl Game {
         // Drawing the score border.
         draw_rectangle(
             BORDER_COLOR,
-            Block::new(0, self.height),
+            self.borders.score_border,
             self.width,
             SCORE_BORDER_WIDTH,
             con,
@@ -196,9 +215,9 @@ impl Game {
     fn _draw_game_over_screen(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         draw_rectangle(
             GAMEOVER_COLOR,
-            Block::new(0, SCORE_BORDER_WIDTH),
-            self.width,
-            self.height,
+            Block::new(SCORE_BORDER_WIDTH, BORDER_WIDTH),
+            self.width - 2 * BORDER_WIDTH,
+            self.height - BORDER_WIDTH - SCORE_BORDER_WIDTH,
             con,
             g,
         );
@@ -207,10 +226,7 @@ impl Game {
             false => "",
         };
         draw_text(
-            &format!(
-                "GAME OVER\n{} POINTS{}\n<SPACE> TO PLAY\n<S> TO SEE SCORES",
-                self.score, highscore
-            ),
+            &format!("GAME OVER\n{}{}\n<SPACE> TO PLAY", self.score, highscore),
             Block::new(BORDER_WIDTH, BORDER_WIDTH),
             GAMEOVER_TEXT_COLOR,
             32,
@@ -229,9 +245,9 @@ impl Game {
     ) {
         show_scores(
             scores,
-            Block { x: 0, y: 0 },
+            self.borders.high_score_border,
             GAMEOVER_TEXT_COLOR,
-            10,
+            15,
             glyphs,
             con,
             g,
@@ -250,6 +266,7 @@ impl Game {
         glyphs: &mut Glyphs,
         con: &Context,
         g: &mut G2d,
+        scores: &HashMap<i32, Score>,
     ) {
         // Drawing the snake and food.
         self.snake.draw(con, g);
@@ -263,12 +280,8 @@ impl Game {
         // Drawing a game over screen.
         if self.game_over {
             self._draw_game_over_screen(glyphs, con, g);
+            self._draw_scoreboard(scores, glyphs, con, g)
         }
-
-        // TODO: how to draw scoreboard while holding down S?
-        // if let Some(Key::S) = key {
-        //     self._draw_scoreboard(scores, glyphs, con, g)
-        // }
     }
 
     /// Move the game one tick, checking for game over, food presence and drawing the snake.
