@@ -19,7 +19,7 @@ use game::Game;
 
 const BACK_COLOR: Color = [0.5, 0.5, 0.5, 1.0];
 const ASSETS_FOLDER: &str = "assets";
-const ASSETS_FONT_NAME: &str = "retro-gaming.ttf";
+const ASSETS_FONT_NAME: &str = "joystix.monospace-regular.otf";
 const ASSETS_SCORE_NAME: &str = "scores.json";
 
 fn main() {
@@ -47,36 +47,23 @@ fn main() {
     while let Some(event) = window.next() {
         // Checking if this score beats any other.
         if game.game_over() && !game.score_written {
-            if let Some(rank) = score::check_score(game.score(), &scores) {
-                game.score_written = true;
-                score::update_scores(
-                    rank,
-                    score::ScoreBuilder::default()
-                        .player("nice")
-                        .score(game.score())
-                        .build(),
-                    &mut scores,
-                );
-                match score::write_scores_to_json(scores_file, &scores) {
-                    Ok(_) => (),
-                    Err(e) => panic!("Could not write scores: {e:?}"),
-                };
-            }
+            let name = score::ask_name();
+            score::write_score(&mut scores, &name, &mut game, scores_file)
         }
         // Catching game events corresponding to button presses. Handling in-game logic.
-        if let Some(Button::Keyboard(key)) = event.press_args() {
-            game.key_pressed(key)
+        if let Some(Button::Keyboard(k)) = event.press_args() {
+            game.key_pressed(k);
         };
         // Passing _ as OpenGL Device.
         window.draw_2d(&event, |con, g, device| {
             // Clearing the window abd drawing a new one.
             clear(BACK_COLOR, g);
-            // TODO: how to draw scoreboard while holding down S?
             game.draw(
                 //&scores,
                 &mut glyphs,
                 &con,
                 g,
+                &scores,
             );
             // Clearing the glyphs buffer at the end of the frame drawing.
             glyphs.factory.encoder.flush(device);

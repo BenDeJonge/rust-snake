@@ -3,12 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
 use crate::dateformat;
+use crate::game::Game;
 
 pub const NUMBER_HIGH_SCORES: i32 = 10;
 const MAX_NAME_LENGTH: i32 = 10;
@@ -124,4 +125,31 @@ pub fn write_scores_to_json<P: AsRef<Path>>(
     let mut buffer = File::create(json)?;
     buffer.write_all(serialized.as_bytes())?;
     Ok(())
+}
+
+pub fn write_score(
+    scores: &mut HashMap<i32, Score>,
+    name: &str,
+    game: &mut Game,
+    scores_file: &PathBuf,
+) {
+    if let Some(rank) = check_score(game.score(), scores) {
+        game.score_written = true;
+        update_scores(
+            rank,
+            ScoreBuilder::default()
+                .player(name)
+                .score(game.score())
+                .build(),
+            scores,
+        );
+        match write_scores_to_json(scores_file, scores) {
+            Ok(_) => (),
+            Err(e) => panic!("Could not write scores: {e:?}"),
+        };
+    }
+}
+
+pub fn ask_name() -> String {
+    String::from("nice")
 }
