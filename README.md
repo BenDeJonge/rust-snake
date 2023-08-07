@@ -13,6 +13,10 @@ One of my favorite ways to learn a new programming language, is by implementing 
 - [ ] High scores
 - [ ] Game speed up
 
+# Used assets
+
+The used in-game font is called Joystix Monospace Regular and can be downloaded [here](https://www.1001fonts.com/joystix-font.html) and is free for commercial use.
+
 # Demo
 
 <img src="/assets/rust-snake.gif"/>
