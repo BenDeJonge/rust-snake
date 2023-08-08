@@ -1,12 +1,13 @@
 // External imports.
 use piston_window::types::Color;
 use piston_window::{Context, G2d};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
+use std::hash::Hash;
 
 // Importing local modules from the crate root.
 use crate::block::Block;
 use crate::direction::Direction;
-use crate::draw::draw_block;
+use crate::draw::{draw_block, BLOCK_SIZE, SNAKE_BLOCK_SIZE};
 
 const SNAKE_HEAD_COLOR: Color = [0.00, 0.60, 0.00, 1.00];
 const SNAKE_BODY_COLOR: Color = [0.00, 0.80, 0.00, 1.00];
@@ -22,6 +23,7 @@ pub struct Snake {
     tail: Option<Block>,
     /// The (x,y) coordinates of all body Blocks.
     body: VecDeque<Block>,
+    pub digesting: HashMap<Block, i32>,
 }
 
 impl Snake {
@@ -56,6 +58,7 @@ impl Snake {
             current_direction: direction.unwrap_or(Direction::Right),
             body,
             tail: None,
+            digesting: HashMap::new(),
         }
     }
 
@@ -64,13 +67,57 @@ impl Snake {
         self.body.len() as i32
     }
 
+    pub fn _get_offset_size(&self, delta: i32) -> [f64; 2] {
+        match delta {
+            0 => [(BLOCK_SIZE - SNAKE_BLOCK_SIZE) / 2.0, SNAKE_BLOCK_SIZE],
+            1 => [-(BLOCK_SIZE - SNAKE_BLOCK_SIZE) / 2.0, BLOCK_SIZE],
+            -1 => [(BLOCK_SIZE - SNAKE_BLOCK_SIZE) / 2.0, BLOCK_SIZE],
+            _ => [0.0, BLOCK_SIZE],
+        }
+    }
+
     /// Draw all blocks in the Snakes body inside the context using the graphics engine.
-    pub fn draw(&self, con: &Context, g: &mut G2d) {
+    pub fn draw(&mut self, con: &Context, g: &mut G2d) {
         for (i, block) in self.body.iter().enumerate() {
+            // Drawing body part.
             if i > 0 {
-                draw_block(*block, SNAKE_BODY_COLOR, con, g)
+                // Drawing body part on location where food was eaten.
+                if self.digesting.get(block).is_some() {
+                    draw_block(
+                        *block,
+                        SNAKE_BODY_COLOR,
+                        [0.0, 0.0],
+                        [BLOCK_SIZE, BLOCK_SIZE],
+                        con,
+                        g,
+                    );
+                }
+                // Drawing other body part.
+                else {
+                    let current = self.body.get(i).unwrap();
+                    let previous = self.body.get(i - 1).unwrap();
+                    // Calculate offsets and connections.
+                    let x_offset_size = self._get_offset_size(current.x - previous.x);
+                    let y_offset_size = self._get_offset_size(current.y - previous.y);
+                    draw_block(
+                        *block,
+                        SNAKE_BODY_COLOR,
+                        [x_offset_size[0], y_offset_size[0]],
+                        [x_offset_size[1], y_offset_size[1]],
+                        con,
+                        g,
+                    )
+                }
+            // Drawing head.
             } else {
-                draw_block(*block, SNAKE_HEAD_COLOR, con, g)
+                draw_block(
+                    *block,
+                    SNAKE_HEAD_COLOR,
+                    [0.0, 0.0],
+                    [BLOCK_SIZE, BLOCK_SIZE],
+                    con,
+                    g,
+                )
             }
         }
     }
@@ -94,6 +141,14 @@ impl Snake {
         if let Some(dir) = direction {
             self.current_direction = dir
         };
+
+        let mut new_digesting: HashMap<Block, i32> = HashMap::new();
+        for (block, count) in &self.digesting {
+            if *count >= 1 {
+                new_digesting.insert(*block, *count - 1);
+            }
+        }
+        self.digesting = new_digesting;
         // Get the location of the new block based on the head position and the direction.
         // Note the required comma after each new match statement.
         let head = self.head_position();

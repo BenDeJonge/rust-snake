@@ -9,7 +9,8 @@ use crate::dateformat;
 use crate::score;
 
 // Setting up a constant for the block size in pixels.
-const BLOCK_SIZE: f64 = 25.0;
+pub const BLOCK_SIZE: f64 = 25.0;
+pub const SNAKE_BLOCK_SIZE: f64 = 20.0;
 
 /// Convert game coordinates to pixel values.
 /// # Arguments
@@ -27,17 +28,19 @@ pub fn to_pixels(game_coord: i32) -> f64 {
 /// * `y: i32` - The y coordinate in game coordinates.
 /// * `con`: &piston_window::Context - A reference to the games context.
 /// * `g`: &mut piston_window::G2d - A mutable reference to the graphics engine used for drawing.
-pub fn draw_block(block: Block, color: Color, con: &Context, g: &mut G2d) {
+pub fn draw_block(
+    block: Block,
+    color: Color,
+    offset: [f64; 2],
+    size: [f64; 2],
+    con: &Context,
+    g: &mut G2d,
+) {
     // Conversion to pixels.
-    let gui_x = to_pixels(block.x);
-    let gui_y = to_pixels(block.y);
+    let gui_x = to_pixels(block.x) + offset[0];
+    let gui_y = to_pixels(block.y) + offset[1];
     // Instantiating a rectangle in the context, as supported by the graphics engine.
-    rectangle(
-        color,
-        [gui_x, gui_y, BLOCK_SIZE, BLOCK_SIZE],
-        con.transform,
-        g,
-    )
+    rectangle(color, [gui_x, gui_y, size[0], size[1]], con.transform, g)
 }
 
 /// Draw a rectangle composed of blocks in the context.
