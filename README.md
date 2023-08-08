@@ -11,7 +11,7 @@ One of my favorite ways to learn a new programming language, is by implementing 
 - [x] Food tries to escape
 - [x] Score display
 - [x] High scores
-- [ ] Game speed up
+- [x] Game speed up
 
 # Used assets
 
