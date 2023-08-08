@@ -21,8 +21,10 @@ const GAMEOVER_COLOR: Color = [0.90, 0.00, 0.00, 0.50];
 const GAMEOVER_TEXT_COLOR: Color = [1.0, 1.0, 1.0, 0.9];
 const SCORE_BORDER_WIDTH: i32 = 1;
 const SCORE_FONT_SIZE: u32 = 20;
-const MOVING_PERIOD: f64 = 0.1;
+const MOVING_PERIOD: f64 = 0.5;
 const FOOD_SPEED_INCREASE: i32 = 5;
+const SPEED_FACTOR: f64 = 0.8;
+const FOODS_PER_SPEED_INCREASE: i32 = 5;
 
 struct Borders {
     top_border: Block,
@@ -253,8 +255,8 @@ impl Game {
 
     fn _draw_score_text(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         draw_text(
-            self.score.to_string().as_str(),
-            Block::new(self.width / 2, self.height + SCORE_BORDER_WIDTH / 2),
+            &format!("SCORE: {}", self.score.to_string().as_str()),
+            Block::new(SCORE_BORDER_WIDTH, self.height + SCORE_BORDER_WIDTH / 2),
             FOOD_COLOR,
             SCORE_FONT_SIZE,
             glyphs,
@@ -263,6 +265,25 @@ impl Game {
         );
     }
 
+    fn _draw_speed_text(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
+        draw_text(
+            &format!(
+                "SPEED: {}",
+                (1 + self.score / FOODS_PER_SPEED_INCREASE)
+                    .to_string()
+                    .as_str()
+            ),
+            Block::new(
+                self.width - 7 * SCORE_BORDER_WIDTH,
+                self.height + SCORE_BORDER_WIDTH / 2,
+            ),
+            FOOD_COLOR,
+            SCORE_FONT_SIZE,
+            glyphs,
+            con,
+            g,
+        );
+    }
     fn _draw_game_over_screen(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         draw_rectangle(
             GAMEOVER_COLOR,
@@ -340,6 +361,7 @@ impl Game {
 
         self._draw_background(con, g);
         self._draw_score_text(glyphs, con, g);
+        self._draw_speed_text(glyphs, con, g);
 
         // Drawing a game over screen.
         if self.game_over {
@@ -364,7 +386,9 @@ impl Game {
             None => self.add_food(),
         }
         // Moving after the moving period has passed.
-        if self.waiting_time > MOVING_PERIOD {
+        if self.waiting_time
+            > MOVING_PERIOD * SPEED_FACTOR.powi(self.score / FOODS_PER_SPEED_INCREASE)
+        {
             self.update_food();
             self.update_snake();
         }
