@@ -2,12 +2,13 @@
 use piston_window::types::Color;
 use piston_window::{Context, G2d};
 use std::collections::{HashMap, VecDeque};
-use std::hash::Hash;
 
 // Importing local modules from the crate root.
 use crate::block::Block;
 use crate::direction::Direction;
-use crate::draw::{draw_block, BLOCK_SIZE, SNAKE_BLOCK_SIZE};
+use crate::draw::{
+    draw_block, get_offset_size_digesting, get_offset_size_regular, BLOCK_SIZE, SNAKE_BLOCK_SIZE,
+};
 
 const SNAKE_HEAD_COLOR: Color = [0.00, 0.60, 0.00, 1.00];
 const SNAKE_BODY_COLOR: Color = [0.00, 0.80, 0.00, 1.00];
@@ -96,9 +97,24 @@ impl Snake {
                 else {
                     let current = self.body.get(i).unwrap();
                     let previous = self.body.get(i - 1).unwrap();
+
+                    let (x_offset_size, y_offset_size) = match self.body.get(i + 1) {
+                        // There is a following block. Formatting to be decided.
+                        Some(next) => {
+                            if self.digesting.get(next).is_some() {
+                                // The following block is digesting. Format the current based on both.
+                                get_offset_size_digesting(*current, *previous, *next)
+                            } else {
+                                // The following block is not digesting. Format the current based only on previous.
+                                get_offset_size_regular(*current, *previous)
+                            }
+                        }
+                        // There is no following block. Format the current based only on previous.
+                        None => get_offset_size_regular(*current, *previous),
+                    };
+
                     // Calculate offsets and connections.
-                    let x_offset_size = self._get_offset_size(current.x - previous.x);
-                    let y_offset_size = self._get_offset_size(current.y - previous.y);
+                    // let (x_offset_size, y_offset_size) = get_offset_size(*current, *previous);
                     draw_block(
                         *block,
                         SNAKE_BODY_COLOR,

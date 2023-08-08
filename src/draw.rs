@@ -141,3 +141,47 @@ pub fn show_scores(
     }
     draw_text(&text, top_left, color, font_size, glyphs, con, g);
 }
+
+fn _get_offset_size(delta: i32) -> [f64; 2] {
+    let shift = (BLOCK_SIZE - SNAKE_BLOCK_SIZE) / 2.0;
+    match delta {
+        0 => [shift, SNAKE_BLOCK_SIZE],
+        1 => [-shift, BLOCK_SIZE],
+        -1 => [shift, BLOCK_SIZE],
+        _ => [0.0, BLOCK_SIZE],
+    }
+}
+
+pub fn get_offset_size_regular(current: Block, previous: Block) -> ([f64; 2], [f64; 2]) {
+    (
+        _get_offset_size(current.x - previous.x),
+        _get_offset_size(current.y - previous.y),
+    )
+}
+
+pub fn get_offset_size_digesting(
+    current: Block,
+    previous: Block,
+    next: Block,
+) -> ([f64; 2], [f64; 2]) {
+    let (mut x_offset_size, mut y_offset_size) = get_offset_size_regular(current, previous);
+    let shift = (BLOCK_SIZE - SNAKE_BLOCK_SIZE) / 2.0;
+
+    match current.x - next.x {
+        -1 => x_offset_size[1] += shift,
+        1 => {
+            x_offset_size[0] -= shift;
+            x_offset_size[1] += shift;
+        }
+        _ => match current.y - next.y {
+            1 => {
+                y_offset_size[0] -= shift;
+                y_offset_size[1] += shift;
+            }
+            -1 => y_offset_size[1] += shift,
+            _ => (),
+        },
+    }
+
+    (x_offset_size, y_offset_size)
+}
