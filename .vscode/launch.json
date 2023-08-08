@@ -1,15 +1,13 @@
 {
-    "version": "0.3.0",
+    "version": "0.4.0",
     "configurations": [
         {
             "name": "(Windows) Launch",
-            "type": "cppvsdbg",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceRoot}/target/debug/rust-snake.exe",
             "args": [],
-            "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
-            "environment": [],
             "console": "integratedTerminal",
         },
     ]
