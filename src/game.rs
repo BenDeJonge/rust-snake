@@ -2,7 +2,7 @@
 use piston_window::types::Color;
 use piston_window::{Context, G2d, Glyphs, Key};
 use rand::{thread_rng, Rng};
-use std::collections::HashMap;
+use std::path::PathBuf;
 
 // Local imports.
 use crate::block::Block;
@@ -10,7 +10,7 @@ use crate::direction::Direction;
 use crate::draw::show_scores;
 use crate::draw::{draw_block, draw_rectangle, draw_text};
 use crate::food;
-use crate::score::Score;
+use crate::score::{create_empty_name, write_score, Score, MAX_NAME_LENGTH};
 use crate::snake::Snake;
 
 // Constants.
@@ -31,6 +31,7 @@ struct Borders {
     right_border: Block,
     score_border: Block,
     high_score_border: Block,
+    score_name_border: Block,
 }
 
 pub struct Game {
@@ -45,7 +46,9 @@ pub struct Game {
     waiting_time: f64,
 
     score: i32,
+    pub high_score: bool,
     pub score_written: bool,
+    score_name: String,
 
     borders: Borders,
 }
@@ -72,7 +75,9 @@ impl Game {
             game_over: false,
             direction_queue: Vec::new(),
             score: 0,
+            high_score: false,
             score_written: false,
+            score_name: create_empty_name(),
             borders: Borders {
                 top_border: Block::new(0, 0),
                 bottom_border: Block::new(0, height - BORDER_WIDTH - SCORE_BORDER_WIDTH),
@@ -80,6 +85,7 @@ impl Game {
                 right_border: Block::new(width - BORDER_WIDTH, 0),
                 score_border: Block::new(0, height - BORDER_WIDTH),
                 high_score_border: Block::new(BORDER_WIDTH, height / 2 + 1),
+                score_name_border: Block::new(BORDER_WIDTH, height / 2 - 1),
             },
         }
     }
@@ -87,21 +93,10 @@ impl Game {
     /// React to a keypress.
     /// # Arguments
     /// * `piston_window::Key` - The key being pressed.
-    pub fn key_pressed(
-        &mut self,
-        key: Key,
-        // scores: &HashMap<i32, Score>,
-        // top_left: Block,
-        // color: Color,
-        // font_size: u32,
-        // glyphs: &mut Glyphs,
-        // con: &Context,
-        // g: &mut G2d,
-    ) {
+    pub fn key_pressed(&mut self, key: Key) {
         if self.game_over {
             match key {
                 Key::Space => self.restart(),
-                // Key::S => show_scores(scores, top_left, color, font_size, glyphs, con, g),
                 _ => return,
             }
         };
@@ -120,6 +115,62 @@ impl Game {
             return;
         }
         self.direction_queue.push(direction);
+    }
+
+    /// Interact with the name entry field.
+    /// * `key: piston_window::Key` - The key being pressed. Allows letter, backspace and enter.
+    /// * `scores: &mut Vec<Score>` - The vector of Score structs to push the new score to.
+    /// * `scores_file: &PathBuf` - The location of the score file to write the new scores to.
+    pub fn ask_name(&mut self, key: Key, scores: &mut Vec<Score>, scores_file: &PathBuf) {
+        if self.game_over && self.high_score && !self.score_written {
+            if let Some(letter) = match key {
+                // Valid letter.
+                Key::A => Some('A'),
+                Key::B => Some('B'),
+                Key::C => Some('C'),
+                Key::D => Some('D'),
+                Key::E => Some('E'),
+                Key::F => Some('F'),
+                Key::G => Some('G'),
+                Key::H => Some('H'),
+                Key::I => Some('I'),
+                Key::J => Some('J'),
+                Key::K => Some('K'),
+                Key::L => Some('L'),
+                Key::M => Some('M'),
+                Key::N => Some('N'),
+                Key::O => Some('O'),
+                Key::P => Some('P'),
+                Key::Q => Some('Q'),
+                Key::R => Some('R'),
+                Key::S => Some('S'),
+                Key::T => Some('T'),
+                Key::U => Some('U'),
+                Key::V => Some('V'),
+                Key::W => Some('W'),
+                Key::X => Some('X'),
+                Key::Y => Some('Y'),
+                Key::Z => Some('Z'),
+                // Removing a letter from the name.
+                Key::Backspace => {
+                    self.score_name.pop();
+                    None
+                }
+                // Accepting the name.
+                Key::Return => {
+                    write_score(scores, &self.score_name, self, scores_file);
+                    self.score_written = true;
+                    None
+                }
+                // Invalid key.
+                _ => None,
+            } {
+                // Adding a letter if there is still room.
+                if self.score_name.chars().count() < MAX_NAME_LENGTH {
+                    self.score_name.push(letter)
+                }
+            }
+        }
     }
 
     /// Move to the next position and ead food, stopping the game in case of a death.
@@ -221,7 +272,7 @@ impl Game {
             con,
             g,
         );
-        let highscore = match self.score_written {
+        let highscore = match self.high_score {
             true => " - HIGHSCORE",
             false => "",
         };
@@ -238,7 +289,8 @@ impl Game {
 
     fn _draw_scoreboard(
         &self,
-        scores: &HashMap<i32, Score>,
+        scores: &[Score],
+        // TODO: Make alternative with Vec<Score>.
         glyphs: &mut Glyphs,
         con: &Context,
         g: &mut G2d,
@@ -248,6 +300,18 @@ impl Game {
             self.borders.high_score_border,
             GAMEOVER_TEXT_COLOR,
             15,
+            glyphs,
+            con,
+            g,
+        )
+    }
+
+    fn _draw_name_querry(&self, glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
+        draw_text(
+            &format!("Name: {}", &self.score_name),
+            self.borders.score_name_border,
+            GAMEOVER_TEXT_COLOR,
+            SCORE_FONT_SIZE,
             glyphs,
             con,
             g,
@@ -266,7 +330,7 @@ impl Game {
         glyphs: &mut Glyphs,
         con: &Context,
         g: &mut G2d,
-        scores: &HashMap<i32, Score>,
+        scores: &[Score],
     ) {
         // Drawing the snake and food.
         self.snake.draw(con, g);
@@ -281,6 +345,10 @@ impl Game {
         if self.game_over {
             self._draw_game_over_screen(glyphs, con, g);
             self._draw_scoreboard(scores, glyphs, con, g)
+        }
+
+        if self.high_score {
+            self._draw_name_querry(glyphs, con, g);
         }
     }
 
@@ -310,7 +378,9 @@ impl Game {
         self.food = Some(Block::new(6, 4));
         self.game_over = false;
         self.score = 0;
+        self.high_score = false;
         self.score_written = false;
+        self.score_name = create_empty_name();
     }
 
     /// Respawn food at a random location after a previous one has been eaten.

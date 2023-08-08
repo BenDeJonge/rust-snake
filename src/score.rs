@@ -1,26 +1,17 @@
+// External imports.
+use crate::dateformat;
+use crate::game::Game;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
-use chrono::{DateTime, Utc};
-use std::collections::HashMap;
+// Constants.
+pub const NUMBER_HIGH_SCORES: usize = 10;
+pub const MAX_NAME_LENGTH: usize = 10;
 
-use crate::dateformat;
-use crate::game::Game;
-
-pub const NUMBER_HIGH_SCORES: i32 = 10;
-const MAX_NAME_LENGTH: i32 = 10;
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HighScore {
-    #[serde(flatten)]
-    score: HashMap<i32, Score>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Score {
     player: String,
     score: i32,
@@ -86,55 +77,85 @@ impl ScoreBuilder {
     }
 }
 
-pub fn parse_scores<P: AsRef<Path>>(json: P) -> Result<HashMap<i32, Score>, Box<dyn Error>> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(json)?;
-    let mut reader = BufReader::new(file);
+/// Parse a vector of scores from the score file in an infallible way.
+/// # Arguments
+/// * `json: P` - A reference to path-like object, pointing to a score file.
+pub fn parse_scores<P: AsRef<Path>>(json: P) -> Vec<Score> {
     let mut data = String::new();
-    reader.read_to_string(&mut data).unwrap_or_default();
-    let mut scores: HashMap<i32, Score> = serde_json::from_str(&data).unwrap_or_else(|_| {
+    // Open the file in read-only mode with buffer.
+    if let Ok(f) = File::open(json) {
+        let mut reader = BufReader::new(f);
+        reader.read_to_string(&mut data).unwrap_or_default();
+    };
+    let mut scores: Vec<Score> = serde_json::from_str(&data).unwrap_or_else(|_| {
         // Generating default map.
-        let map: HashMap<i32, Score> = HashMap::new();
+        let map: Vec<Score> = Vec::new();
         map
     });
     // Reserve enough space for all the high scores and populate the map with defaults if not enough are read.
     scores
-        .try_reserve(NUMBER_HIGH_SCORES as usize)
+        .try_reserve_exact(NUMBER_HIGH_SCORES)
         .expect("Cannot hold a score database of that size.");
-    for i in 1..NUMBER_HIGH_SCORES + 1 {
-        if scores.get(&i).is_none() {
-            scores.insert(i, ScoreBuilder::default().build());
+    scores.truncate(NUMBER_HIGH_SCORES);
+    if scores.len() < NUMBER_HIGH_SCORES {
+        let mut append = vec![ScoreBuilder::default().build(); NUMBER_HIGH_SCORES - scores.len()];
+        scores.append(&mut append);
+    }
+    scores
+}
+
+/// Binary search for the first score in the reverse sorted arrays of scores that is lower than the new score.
+/// # Arguments
+/// * `score: i32` - The score to search for.
+/// * `scores: &Vec<Score>` - The reverse sorted vector of Score structs.
+/// # Returns
+/// * `Option<i32>` - The rank of the score as a i32 or None.
+pub fn check_score(score: i32, scores: &Vec<Score>) -> Option<usize> {
+    if scores.is_empty() {
+        return None;
+    }
+
+    let mut low: i32 = 0;
+    let mut high: i32 = scores.len() as i32 - 1;
+
+    while low <= high {
+        let middle = low + (high - low) / 2;
+        if let Some(current) = scores.get(middle as usize) {
+            if current.score >= score {
+                low = middle + 1;
+            }
+            if current.score < score {
+                high = middle - 1;
+            }
         }
     }
-    Ok(scores)
+    if low >= 0 {
+        return Some(low as usize);
+    }
+    None
 }
 
-pub fn check_score(score: i32, scores: &HashMap<i32, Score>) -> Option<i32> {
-    (1..NUMBER_HIGH_SCORES + 1).find(|&rank| score > scores.get(&rank).unwrap().score)
+/// Remove the lowest score and insert the new highscore at the correct rank.
+/// # Arguments
+/// * `rank: usize` - The rank of the new score.
+/// * `score: Score` - The score to be inserted.
+/// * `scores: &mut Vec<Score>` - A mutable reference to the current list of highscores.
+pub fn update_scores(rank: usize, score: Score, scores: &mut Vec<Score>) {
+    if rank <= NUMBER_HIGH_SCORES {
+        scores.pop();
+        scores.insert(rank, score);
+    }
 }
 
-pub fn update_scores(rank: i32, score: Score, scores: &mut HashMap<i32, Score>) {
-    scores.insert(rank, score);
-}
-
-pub fn write_scores_to_json<P: AsRef<Path>>(
-    json: P,
-    scores: &HashMap<i32, Score>,
-) -> std::io::Result<()> {
+pub fn write_scores_to_json<P: AsRef<Path>>(json: P, scores: &Vec<Score>) -> std::io::Result<()> {
     let serialized: String = serde_json::to_string_pretty(scores).unwrap();
     let mut buffer = File::create(json)?;
     buffer.write_all(serialized.as_bytes())?;
     Ok(())
 }
 
-pub fn write_score(
-    scores: &mut HashMap<i32, Score>,
-    name: &str,
-    game: &mut Game,
-    scores_file: &PathBuf,
-) {
+pub fn write_score(scores: &mut Vec<Score>, name: &str, game: &Game, scores_file: &PathBuf) {
     if let Some(rank) = check_score(game.score(), scores) {
-        game.score_written = true;
         update_scores(
             rank,
             ScoreBuilder::default()
@@ -150,6 +171,8 @@ pub fn write_score(
     }
 }
 
-pub fn ask_name() -> String {
-    String::from("nice")
+pub fn create_empty_name() -> String {
+    let mut s = String::new();
+    s.reserve_exact(MAX_NAME_LENGTH);
+    s
 }

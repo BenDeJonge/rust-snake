@@ -12,6 +12,7 @@ mod snake;
 
 use piston_window::types::Color;
 use piston_window::{clear, Button, PistonWindow, PressEvent, UpdateEvent, WindowSettings};
+use score::check_score;
 use std::env;
 
 use draw::to_pixels;
@@ -41,18 +42,18 @@ fn main() {
 
     // Loading current high-scores
     let scores_file = &assets.join(ASSETS_SCORE_NAME);
-    let mut scores = score::parse_scores(scores_file).unwrap();
+    let mut scores = score::parse_scores(scores_file);
     // Starting the main loop.
     let mut game = Game::new(width, height, None, None);
     while let Some(event) = window.next() {
         // Checking if this score beats any other.
-        if game.game_over() && !game.score_written {
-            let name = score::ask_name();
-            score::write_score(&mut scores, &name, &mut game, scores_file)
+        if game.game_over() && !game.high_score {
+            game.high_score = check_score(game.score(), &scores).is_some();
         }
         // Catching game events corresponding to button presses. Handling in-game logic.
         if let Some(Button::Keyboard(k)) = event.press_args() {
             game.key_pressed(k);
+            game.ask_name(k, &mut scores, scores_file);
         };
         // Passing _ as OpenGL Device.
         window.draw_2d(&event, |con, g, device| {

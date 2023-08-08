@@ -2,8 +2,8 @@
 use piston_window::text;
 use piston_window::types::Color;
 use piston_window::{rectangle, Context, G2d, Glyphs, Transformed};
-use std::collections::HashMap;
 
+// Local imports.
 use crate::block::Block;
 use crate::dateformat;
 use crate::score;
@@ -106,8 +106,17 @@ pub fn draw_text(
     }
 }
 
+/// Display the current highscores.
+/// # Arguments
+/// * `scores: &[score::Score]` - A slice of the current highscore Vec.
+/// * `top_left: Block` - The location of the top left corner of the text block.
+/// * `color: piston_window::Color` - The text color.
+/// * `font_size: u32` - The text size.
+/// * `glyphs: &mut piston_window::Glyphs` - The characterset to use.
+/// * `con: &piston_window::Context` - A refrence to the games context.
+/// * `g: &mut piston_window::G2d` - A mutable reference to the graphics engine used for drawing.
 pub fn show_scores(
-    scores: &HashMap<i32, score::Score>,
+    scores: &[score::Score],
     top_left: Block,
     color: Color,
     font_size: u32,
@@ -115,12 +124,13 @@ pub fn show_scores(
     con: &Context,
     g: &mut G2d,
 ) {
+    let name_len = score::MAX_NAME_LENGTH;
     let mut text = String::new();
-    for rank in 1..score::NUMBER_HIGH_SCORES + 1 {
-        let score = scores.get(&rank).unwrap();
+    for rank in 0..score::NUMBER_HIGH_SCORES {
+        let score = scores.get(rank).unwrap();
         text.push_str(&format!(
-            "{:2}. {:3} {:10} {:19}\n",
-            rank,
+            "{:2}. {:3} {:name_len$} {:19}\n",
+            rank + 1,
             score.score(),
             score.player(),
             score.timestamp().format(dateformat::DISPLAY_FORMAT)
