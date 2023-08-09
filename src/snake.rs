@@ -78,6 +78,21 @@ impl Snake {
     }
 
     /// Draw all blocks in the Snakes body inside the context using the graphics engine.
+    /// The game happens on a 2D array of Blocks of side length BLOCK_SIZE.
+    /// The snake body blocks, however, are smaller i.e., of side length SNAKE_BLOCK_SIZE.
+    /// In order to properly connect these smaller blocks, shifts in the size (the blocks' side length) and offset (the
+    /// blocks' starting point in the top left corner) are applied along 1 dimension. As a result, the snakes' body
+    /// blocks are rectangles rather than squares.
+    ///
+    /// Below, a three part snake is drawn in a grid, with the larger grid block corners denoted by `x`. Conversely, the
+    /// smaller snake body blocks' corners are denoted by an `o` and are colored in with `.`.
+    ///```
+    /// x_______x_______x_______x
+    /// | o-------o-----|.......|
+    /// | |.............|.......|
+    /// | o-------o-----|.......|
+    /// x_______x_______x_______x
+    ///```
     pub fn draw(&mut self, con: &Context, g: &mut G2d) {
         for (i, block) in self.body.iter().enumerate() {
             // Drawing body part.

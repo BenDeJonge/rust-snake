@@ -152,6 +152,13 @@ fn _get_offset_size(delta: i32) -> [f64; 2] {
     }
 }
 
+/// Get the offsets and sizes to connect two non-digestion blocks.
+/// # Arguments
+/// * `current: Block` - The current non-digestion block, closer to the tail.
+/// * `previous: Block` - The previous non-digestion block, closer to the head.
+/// # Returns
+/// * `[f64; 2]` - The offset and size along x.
+/// * `[f64; 2]` - The offset and size along y.
 pub fn get_offset_size_regular(current: Block, previous: Block) -> ([f64; 2], [f64; 2]) {
     (
         _get_offset_size(current.x - previous.x),
@@ -159,6 +166,14 @@ pub fn get_offset_size_regular(current: Block, previous: Block) -> ([f64; 2], [f
     )
 }
 
+/// Get the offsets and sizes to connect a non-digestion block to a digestion-block.
+/// # Arguments
+/// * `current: Block` - The current non-digestion block, closer to the tail.
+/// * `previous: Block` - The previous non-digestion block, closer to the head.
+/// * `next: Block` - The next digestion block, even closer to the tail.
+/// # Returns
+/// * `[f64; 2]` - The offset and size along x.
+/// * `[f64; 2]` - The offset and size along y.
 pub fn get_offset_size_digesting(
     current: Block,
     previous: Block,
