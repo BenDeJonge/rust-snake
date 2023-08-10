@@ -123,13 +123,13 @@ pub fn check_score(score: i32, scores: &Vec<Score>) -> Option<usize> {
         if let Some(current) = scores.get(middle as usize) {
             if current.score >= score {
                 low = middle + 1;
-            }
-            if current.score < score {
+            } else {
                 high = middle - 1;
             }
         }
     }
-    if low >= 0 {
+    // Clip low to valid indices
+    if low >= 0 && low < scores.len() as i32 {
         return Some(low as usize);
     }
     None
