@@ -1,6 +1,6 @@
 // A simple Block struct, combining an x- and y-coordinate. Will not be exported so not pub.
 // It is required to derive copy and clone allow movement of this type.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Block {
     pub x: i32,
     pub y: i32,

@@ -7,8 +7,7 @@ use std::path::PathBuf;
 // Local imports.
 use crate::block::Block;
 use crate::direction::Direction;
-use crate::draw::show_scores;
-use crate::draw::{draw_block, draw_rectangle, draw_text};
+use crate::draw::{draw_block, draw_rectangle, draw_text, show_scores, BLOCK_SIZE};
 use crate::food;
 use crate::score::{create_empty_name, write_score, Score, MAX_NAME_LENGTH};
 use crate::snake::Snake;
@@ -186,7 +185,6 @@ impl Game {
             self.check_eaten();
         } else {
             self.game_over = true;
-            // TODO: Checking for high score.
         }
         // Resetting.
         self.waiting_time = 0.0;
@@ -308,14 +306,7 @@ impl Game {
         );
     }
 
-    fn _draw_scoreboard(
-        &self,
-        scores: &[Score],
-        // TODO: Make alternative with Vec<Score>.
-        glyphs: &mut Glyphs,
-        con: &Context,
-        g: &mut G2d,
-    ) {
+    fn _draw_scoreboard(&self, scores: &[Score], glyphs: &mut Glyphs, con: &Context, g: &mut G2d) {
         show_scores(
             scores,
             self.borders.high_score_border,
@@ -345,7 +336,7 @@ impl Game {
     /// * `con: &piston_window::Context` - The context in which to draw.
     /// * `g: &mut G2d` - The 2d graphics driver to use.
     pub fn draw(
-        &self,
+        &mut self,
         // key: Option<Key>,
         // scores: &HashMap<i32, Score>,
         glyphs: &mut Glyphs,
@@ -356,7 +347,14 @@ impl Game {
         // Drawing the snake and food.
         self.snake.draw(con, g);
         if let Some(food) = self.food {
-            draw_block(food, FOOD_COLOR, con, g);
+            draw_block(
+                food,
+                FOOD_COLOR,
+                [0.0, 0.0],
+                [BLOCK_SIZE, BLOCK_SIZE],
+                con,
+                g,
+            );
         };
 
         self._draw_background(con, g);
@@ -435,6 +433,9 @@ impl Game {
     pub fn check_eaten(&mut self) {
         // The head position coincides with the food.
         if self.snake.head_position() == self.food.unwrap() {
+            self.snake
+                .digesting
+                .insert(self.food.unwrap(), self.snake.len());
             self.food = None;
             self.snake.restore_tail();
             self.score += 1;
