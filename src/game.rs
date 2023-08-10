@@ -378,6 +378,11 @@ impl Game {
     /// # Arguments
     /// * `delta_time: f64` - The timestep of the tick in seconds.
     pub fn update(&mut self, delta_time: f64) {
+        // Stop movement
+        if self.game_over {
+            return;
+        }
+
         self.waiting_time += delta_time;
 
         // Drawing food if not yet food.
